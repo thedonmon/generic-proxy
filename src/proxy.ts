@@ -2,15 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import axios, { AxiosRequestConfig } from 'axios';
 import dotenv from 'dotenv';
+import { Env } from './types/Env';
 
 dotenv.config();
-
-interface Env {
-  CORS_ALLOW_ORIGIN: string;
-  API_KEY: string;
-  API_BASE_URL: string;
-  API_KEY_INSERTION_METHOD: 'query' | 'header' | 'basic_auth';
-}
 
 const env: Env = {
   CORS_ALLOW_ORIGIN: process.env.CORS_ALLOW_ORIGIN || '',
@@ -43,9 +37,15 @@ app.all('*', async (req, res) => {
       'api-key': env.API_KEY, //change to your format eg. apiKey
     };
   } else if (env.API_KEY_INSERTION_METHOD === 'header') {
-    requestOptions.headers!['X-API-Key'] = env.API_KEY; //change to your format eg. X-Api-Secret
+    requestOptions.headers = {
+        ...requestOptions.headers,
+        'X-API-Key': env.API_KEY, //change to your format eg. X-Api-Secret
+    }
   } else if (env.API_KEY_INSERTION_METHOD === 'basic_auth') {
-    requestOptions.headers!['Authorization'] = `Basic ${Buffer.from(`:${env.API_KEY}`).toString('base64')}`;
+    requestOptions.headers = {
+        ...requestOptions.headers,
+        'Authorization': `Basic ${Buffer.from(`:${env.API_KEY}`).toString('base64')}`,
+    }
   }
 
   try {

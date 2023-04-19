@@ -65,6 +65,7 @@ The proxy server will automatically add the API key to your requests based on th
 - Multiple API Keys for different routes
 - Rate limiting requests
 - Generic support to deploy to cloudflare workers, aws lambdas, azure functions
+- Logging for metrics and telemetry
 
 ## Contributing
 
