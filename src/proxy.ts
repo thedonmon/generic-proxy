@@ -19,8 +19,11 @@ const env: Env = {
 
 const app = express();
 const port = process.env.PORT || 3001;
-
-app.use(cors());
+let corsOptions = {
+  origin: process.env.CORS_ALLOW_ORIGIN || "*", // default to allow all
+  optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.all('*', async (req, res) => {
