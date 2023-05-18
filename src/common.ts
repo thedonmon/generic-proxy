@@ -19,7 +19,6 @@ const env: Env = {
 export const proxyRequest = (app: express.Application, path: string, baseUrl: string) => {
   app.all(path, async (req, res) => {
     // Replace service path if it exists
-    console.log('path', path, req.path.replace(path, ''))
     const pathReplace = path.replace('*', '')
     let servicePath = path === '*' ? req.path : req.path.replace(pathReplace, '');
     const query = req.query as querystring.ParsedUrlQueryInput;
