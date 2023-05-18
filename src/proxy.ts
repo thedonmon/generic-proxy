@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import url from 'url';
 import axios, { AxiosRequestConfig } from 'axios';
+import * as querystring from 'querystring';
 import dotenv from 'dotenv';
 import { Env } from './types/Env';
 
@@ -20,13 +22,21 @@ app.use(cors());
 app.use(express.json());
 
 app.all('*', async (req, res) => {
-  const url = `${env.API_BASE_URL}${req.path}`;
+  const query = req.query as querystring.ParsedUrlQueryInput;
+  let queryString = '';
+  if (query) {
+    queryString = querystring.stringify(query);
+  }
+  const urlString = `${env.API_BASE_URL}${req.path}${req.query ? `?${queryString}` : ''}`;
+  const { host } = url.parse(env.API_BASE_URL);
+  console.log(`Proxying request to ${url}`, req.method, req.body, req.query)
 
   const requestOptions: AxiosRequestConfig = {
     method: req.method as any,
     headers: {
       ...req.headers,
       'Content-Type': 'application/json',
+      'Host': host
     },
     data: req.body,
   };
@@ -49,15 +59,17 @@ app.all('*', async (req, res) => {
   }
 
   try {
-    const response = await axios(url, requestOptions);
+    const response = await axios(urlString, requestOptions);
     res.status(response.status).send(response.data);
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
       // The request was made, and the server responded with a status code
       // that falls out of the range of 2xx
+      console.log(error.response);
       res.status(error.response.status).send(error.response.data);
     } else {
       // Something went wrong while making the request
+      console.log(error);
       res.status(500).send({ message: 'Internal server error' });
     }
   }
