@@ -13,6 +13,8 @@ const env: Env = {
   API_KEY: process.env.API_KEY || '',
   API_BASE_URL: process.env.API_BASE_URL || '',
   API_KEY_INSERTION_METHOD: (process.env.API_KEY_INSERTION_METHOD || 'query') as 'query' | 'header' | 'basic_auth',
+  API_KEY_HEADER_KEY: process.env.API_KEY_HEADER_KEY || '',
+  API_KEY_QUERY_PARAM: process.env.API_KEY_QUERY_PARAM || '',
 };
 
 const app = express();
@@ -29,7 +31,7 @@ app.all('*', async (req, res) => {
   }
   const urlString = `${env.API_BASE_URL}${req.path}${req.query ? `?${queryString}` : ''}`;
   const { host } = url.parse(env.API_BASE_URL);
-  console.log(`Proxying request to ${url}`, req.method, req.body, req.query)
+  console.log(`Proxying request to ${urlString}`)
 
   const requestOptions: AxiosRequestConfig = {
     method: req.method as any,
@@ -41,20 +43,25 @@ app.all('*', async (req, res) => {
     data: req.body,
   };
 
+  let queryParamKey = env.API_KEY_QUERY_PARAM || 'api-key';
+  let headerKey = env.API_KEY_HEADER_KEY || 'X-API-Key';
+
   if (env.API_KEY_INSERTION_METHOD === 'query') {
+    requestOptions.params = requestOptions.params || {}; // Ensure params exist
     requestOptions.params = {
-      ...req.query,
-      'api-key': env.API_KEY, //change to your format eg. apiKey
+      ...requestOptions.params,
+      [queryParamKey]: env.API_KEY, //use computed property name
     };
   } else if (env.API_KEY_INSERTION_METHOD === 'header') {
+    requestOptions.headers = requestOptions.headers || {}; // Ensure headers exist
     requestOptions.headers = {
-        ...requestOptions.headers,
-        'X-API-Key': env.API_KEY, //change to your format eg. X-Api-Secret
+      ...requestOptions.headers,
+      [headerKey]: env.API_KEY, //use computed property name
     }
   } else if (env.API_KEY_INSERTION_METHOD === 'basic_auth') {
     requestOptions.headers = {
-        ...requestOptions.headers,
-        'Authorization': `Basic ${Buffer.from(`:${env.API_KEY}`).toString('base64')}`,
+      ...requestOptions.headers,
+      'Authorization': `Basic ${Buffer.from(`:${env.API_KEY}`).toString('base64')}`,
     }
   }
 
