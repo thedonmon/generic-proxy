@@ -1,10 +1,8 @@
 import express from 'express';
 import cors from 'cors';
-import url from 'url';
-import axios, { AxiosRequestConfig } from 'axios';
-import * as querystring from 'querystring';
 import dotenv from 'dotenv';
 import { Env } from './types/Env';
+import { proxyRequest } from './common';
 
 dotenv.config();
 
@@ -26,64 +24,7 @@ let corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.all('*', async (req, res) => {
-  const query = req.query as querystring.ParsedUrlQueryInput;
-  let queryString = '';
-  if (query) {
-    queryString = querystring.stringify(query);
-  }
-  const urlString = `${env.API_BASE_URL}${req.path}${req.query ? `?${queryString}` : ''}`;
-  const { host } = url.parse(env.API_BASE_URL);
-  console.log(`Proxying request to ${urlString}`)
-
-  const requestOptions: AxiosRequestConfig = {
-    method: req.method as any,
-    headers: {
-      ...req.headers,
-      'Content-Type': 'application/json',
-      'Host': host
-    },
-    data: req.body,
-  };
-
-  let queryParamKey = env.API_KEY_QUERY_PARAM || 'api-key';
-  let headerKey = env.API_KEY_HEADER_KEY || 'X-API-Key';
-
-  if (env.API_KEY_INSERTION_METHOD === 'query') {
-    requestOptions.params = requestOptions.params || {}; // Ensure params exist
-    requestOptions.params = {
-      ...requestOptions.params,
-      [queryParamKey]: env.API_KEY, //use computed property name
-    };
-  } else if (env.API_KEY_INSERTION_METHOD === 'header') {
-    requestOptions.headers = requestOptions.headers || {}; // Ensure headers exist
-    requestOptions.headers = {
-      ...requestOptions.headers,
-      [headerKey]: env.API_KEY, //use computed property name
-    }
-  } else if (env.API_KEY_INSERTION_METHOD === 'basic_auth') {
-    requestOptions.headers = {
-      ...requestOptions.headers,
-      'Authorization': `Basic ${Buffer.from(`:${env.API_KEY}`).toString('base64')}`,
-    }
-  }
-
-  try {
-    const response = await axios(urlString, requestOptions);
-    res.status(response.status).send(response.data);
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response) {
-      // The request was made, and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.log(error.response);
-      res.status(error.response.status).send(error.response.data);
-    } else {
-      // Something went wrong while making the request
-      console.log(error);
-      res.status(500).send({ message: 'Internal server error' });
-    }
-  }
-});
+proxyRequest(app, '*', env.API_BASE_URL)
 
 app.listen(port, () => {
   console.log(`Proxy server listening at http://localhost:${port}`);

@@ -8,6 +8,8 @@
   "scripts": {
     "start": "node dist/proxy.js",
     "dev": "nodemon src/proxy.ts",
+    "start:multi": "node dist/proxy-multi.js",
+    "dev:multi": "nodemon src/proxy-multi.ts",
     "build": "tsc -p ."
   },
   "dependencies": {
